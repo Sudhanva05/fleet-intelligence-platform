@@ -1,0 +1,67 @@
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v26.2.6
+    container_name: redpanda-0
+
+    command:
+      - redpanda
+      - start
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+      - --smp
+      - "1"
+      - --mode
+      - dev-container
+      - --default-log-level=info
+
+    ports:
+      - "19092:19092"
+      - "19644:9644"
+
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: fleet-redis
+
+    ports:
+      - "6379:6379"
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis-data:/data
+
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: fleet-clickhouse
+
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+
+    environment:
+      CLICKHOUSE_DB: fleet_analytics
+      CLICKHOUSE_USER: fleet_user
+      CLICKHOUSE_PASSWORD: fleet_dev_password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+
+    restart: unless-stopped
+
+volumes:
+  redpanda-data:
+  redis-data:
+  clickhouse-data:
+  clickhouse-logs:
