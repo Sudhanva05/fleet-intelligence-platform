@@ -1,0 +1,6 @@
+﻿clickhouse-connect
+confluent-kafka
+fastapi
+python-dotenv
+redis
+uvicorn

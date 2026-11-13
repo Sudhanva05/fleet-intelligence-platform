@@ -3,6 +3,10 @@ import json
 import time
 import uuid
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import clickhouse_connect
 from confluent_kafka import Consumer
@@ -13,11 +17,11 @@ from confluent_kafka import Consumer
 # -------------------------------
 
 clickhouse = clickhouse_connect.get_client(
-    host="localhost",
-    port=8123,
-    username="fleet_user",
-    password="fleet_dev_password",
-    database="fleet_analytics"
+    host=os.getenv("CLICKHOUSE_HOST", "localhost"),
+    port=int(os.getenv("CLICKHOUSE_PORT", "8123")),
+    username=os.getenv("CLICKHOUSE_USER"),
+    password=os.getenv("CLICKHOUSE_PASSWORD"),
+    database=os.getenv("CLICKHOUSE_DATABASE")
 )
 
 
