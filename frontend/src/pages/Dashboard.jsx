@@ -3,26 +3,34 @@ import { useEffect, useState } from "react";
 import { Truck, Activity, Gauge, Fuel } from "lucide-react";
 
 import StatCard from "../components/StatCard";
+import FleetMap from "../components/FleetMap";
+
 import {
   getVehicleSummary,
   getFleetOverview,
 } from "../services/api";
 
+import api from "../services/api";
+
 function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [overview, setOverview] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [vehicleData, analyticsData] = await Promise.all([
-          getVehicleSummary(),
-          getFleetOverview(),
-        ]);
+        const [vehicleData, analyticsData, fleetData] =
+          await Promise.all([
+            getVehicleSummary(),
+            getFleetOverview(),
+            api.get("/vehicles/"),
+          ]);
 
         setSummary(vehicleData);
         setOverview(analyticsData);
+        setVehicles(fleetData.data.vehicles);
         setError("");
       } catch (err) {
         console.error("Dashboard API error:", err);
@@ -78,6 +86,19 @@ function Dashboard() {
           icon={Fuel}
           color="purple"
         />
+      </div>
+
+      <div className="map-section">
+        <div className="section-heading">
+          <div>
+            <h2>Live Fleet Tracking</h2>
+            <p>
+              Monitoring {vehicles.length} stored vehicle locations
+            </p>
+          </div>
+        </div>
+
+        <FleetMap vehicles={vehicles} />
       </div>
     </section>
   );
