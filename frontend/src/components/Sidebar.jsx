@@ -7,6 +7,8 @@ import {
   Settings,
 } from "lucide-react";
 
+import { NavLink } from "react-router-dom";
+
 const Sidebar = () => {
   return (
     <aside className="sidebar">
@@ -18,15 +20,15 @@ const Sidebar = () => {
       <p className="sidebar-label">MAIN MENU</p>
 
       <nav className="sidebar-nav">
-        <a href="#" className="nav-item active">
+        <NavLink to="/" end className="nav-item">
           <LayoutDashboard size={20} />
           <span>Dashboard</span>
-        </a>
+        </NavLink>
 
-        <a href="#" className="nav-item">
+        <NavLink to="/vehicles" className="nav-item">
           <Truck size={20} />
           <span>Vehicles</span>
-        </a>
+        </NavLink>
 
         <a href="#" className="nav-item">
           <MapPin size={20} />

@@ -257,3 +257,153 @@
   background: #374151;
   border-color: #9ca3af;
 }
+
+
+/* Vehicle Management Page */
+
+.vehicles-page .stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 28px;
+}
+
+.vehicle-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 25px 0 20px;
+  flex-wrap: wrap;
+}
+
+.vehicle-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 220px;
+  background: #111827;
+  border: 1px solid #273449;
+  border-radius: 10px;
+  padding: 0 14px;
+  color: #94a3b8;
+}
+
+.vehicle-search input {
+  width: 100%;
+  padding: 13px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+.vehicle-search input::placeholder {
+  color: #64748b;
+}
+
+.vehicle-toolbar select {
+  background: #111827;
+  color: #f8fafc;
+  border: 1px solid #273449;
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #172f40;
+  color: #38bdf8;
+  border: 1px solid #273449;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.refresh-button:hover {
+  background: #1e4055;
+}
+
+.vehicle-table-container {
+  width: 100%;
+  overflow-x: auto;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+}
+
+.vehicle-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.vehicle-table th {
+  padding: 16px;
+  background: #172033;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vehicle-table td {
+  padding: 15px 16px;
+  border-top: 1px solid #1f2937;
+  color: #cbd5e1;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.vehicle-table tbody tr:hover {
+  background: #172033;
+}
+
+.vehicle-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.vehicle-status.active {
+  background: #14532d;
+  color: #4ade80;
+}
+
+.vehicle-status.stale {
+  background: #374151;
+  color: #cbd5e1;
+}
+
+.vehicle-count {
+  margin-top: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .vehicles-page .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .vehicles-page .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-toolbar {
+    align-items: stretch;
+  }
+
+  .vehicle-search {
+    flex-basis: 100%;
+  }
+}
