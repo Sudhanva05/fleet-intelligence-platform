@@ -1,9 +1,10 @@
 
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-
+import LiveTracking from "./pages/LiveTracking";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
+import Analytics from "./pages/Analytics";
 
 import "./App.css";
 
@@ -18,6 +19,14 @@ function AppLayout() {
     "/vehicles": {
       title: "Vehicle Management",
       subtitle: "Search, monitor and manage your fleet vehicles.",
+    },
+    "/tracking": {
+      title: "Live Fleet Tracking",
+      subtitle: "Monitor vehicle locations in real time.",
+    },
+    "/analytics": {
+      title: "Fleet Analytics",
+      subtitle: "Historical performance and telemetry insights.",
     },
   };
 
@@ -44,6 +53,8 @@ function AppLayout() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/vehicles" element={<Vehicles />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/tracking" element={<LiveTracking />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </main>
     </div>

@@ -6,22 +6,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = clickhouse_connect.get_client(
-    host=os.getenv("CLICKHOUSE_HOST", "localhost"),
-    port=int(os.getenv("CLICKHOUSE_PORT", "8123")),
-    username=os.getenv("CLICKHOUSE_USER"),
-    password=os.getenv("CLICKHOUSE_PASSWORD"),
-    database=os.getenv("CLICKHOUSE_DATABASE")
-)
+def execute_query(query, parameters=None):
+    client = clickhouse_connect.get_client(
+        host=os.getenv("CLICKHOUSE_HOST", "localhost"),
+        port=int(os.getenv("CLICKHOUSE_PORT", "8123")),
+        username=os.getenv("CLICKHOUSE_USER"),
+        password=os.getenv("CLICKHOUSE_PASSWORD"),
+        database=os.getenv("CLICKHOUSE_DATABASE")
+    )
+
+    try:
+        return client.query(query, parameters=parameters)
+    finally:
+        client.close()
 
 
 def check_clickhouse_connection():
-    result = client.query("SELECT version()")
+    result = execute_query("SELECT version()")
     return result.result_rows[0][0]
 
 
 def get_total_events():
-    result = client.query("""
+    result = execute_query("""
         SELECT count()
         FROM vehicle_telemetry
     """)
@@ -30,7 +36,7 @@ def get_total_events():
 
 
 def get_fleet_statistics():
-    result = client.query("""
+    result = execute_query("""
         SELECT
             count() AS total_events,
             uniqExact(vehicle_id) AS total_vehicles,
@@ -44,7 +50,7 @@ def get_fleet_statistics():
 
 
 def get_speed_trend():
-    result = client.query("""
+    result = execute_query("""
         SELECT
             toStartOfMinute(timestamp) AS time,
             round(avg(speed), 2) AS average_speed
@@ -63,7 +69,7 @@ def get_speed_trend():
 
 
 def get_fuel_trend():
-    result = client.query("""
+    result = execute_query("""
         SELECT
             toStartOfMinute(timestamp) AS time,
             round(avg(fuel_level), 2) AS average_fuel
@@ -82,7 +88,7 @@ def get_fuel_trend():
 
 
 def get_vehicle_analytics(vehicle_id: str):
-    result = client.query("""
+    result = execute_query("""
         SELECT
             count() AS total_events,
             round(avg(speed), 2) AS average_speed,
@@ -113,7 +119,7 @@ def get_vehicle_analytics(vehicle_id: str):
 
 
 def get_vehicle_history(vehicle_id: str):
-    result = client.query("""
+    result = execute_query("""
         SELECT
             timestamp,
             latitude,
@@ -135,5 +141,17 @@ def get_vehicle_history(vehicle_id: str):
             "heading": row[4],
             "fuel_level": row[5]
         }
+        for row in result.result_rows
+    ]
+
+def get_analytics_vehicles():
+    result = execute_query("""
+        SELECT DISTINCT vehicle_id
+        FROM vehicle_telemetry
+        ORDER BY vehicle_id
+    """)
+
+    return [
+        str(row[0])
         for row in result.result_rows
     ]

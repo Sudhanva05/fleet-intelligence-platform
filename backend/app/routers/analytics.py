@@ -6,7 +6,8 @@ from backend.app.services.clickhouse_service import (
     get_speed_trend,
     get_fuel_trend,
     get_vehicle_analytics,
-    get_vehicle_history
+    get_vehicle_history,
+    get_analytics_vehicles
 )
 
 router = APIRouter(
@@ -74,4 +75,10 @@ def vehicle_history(vehicle_id: str):
         "vehicle_id": vehicle_id,
         "total_records": len(history),
         "history": history
+    }
+
+@router.get("/vehicles")
+def analytics_vehicles():
+    return {
+        "vehicles": get_analytics_vehicles()
     }

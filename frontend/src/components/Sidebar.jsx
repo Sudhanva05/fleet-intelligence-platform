@@ -30,15 +30,15 @@ const Sidebar = () => {
           <span>Vehicles</span>
         </NavLink>
 
-        <a href="#" className="nav-item">
+        <NavLink to="/tracking" className="nav-item">
           <MapPin size={20} />
           <span>Live Tracking</span>
-        </a>
+        </NavLink>
 
-        <a href="#" className="nav-item">
+        <NavLink to="/analytics" className="nav-item">
           <BarChart3 size={20} />
           <span>Analytics</span>
-        </a>
+        </NavLink>
 
         <a href="#" className="nav-item">
           <Settings size={20} />
