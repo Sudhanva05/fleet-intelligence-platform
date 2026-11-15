@@ -1,11 +1,23 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, RefreshCw, Truck, Activity, WifiOff } from "lucide-react";
+import {
+    Search,
+    RefreshCw,
+    Truck,
+    Activity,
+    WifiOff,
+    X,
+    MapPin,
+    Clock,
+    Gauge,
+    Fuel,
+  } from "lucide-react";
 import api, { getVehicleSummary } from "../services/api";
 
 function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -147,7 +159,11 @@ function Vehicles() {
               </tr>
             ) : (
               filteredVehicles.map((vehicle) => (
-                <tr key={vehicle.vehicle_id}>
+                <tr
+                    key={vehicle.vehicle_id}
+                    onClick={() => setSelectedVehicle(vehicle)}
+                    className="clickable-vehicle-row"
+                >
                   <td>{vehicle.vehicle_id.slice(0, 8)}</td>
 
                   <td>
@@ -173,6 +189,89 @@ function Vehicles() {
       <p className="vehicle-count">
         Showing {filteredVehicles.length} of {vehicles.length} vehicles
       </p>
+
+        {selectedVehicle && (
+        <div className="vehicle-details-overlay" onClick={() => setSelectedVehicle(null)}>
+            <aside
+            className="vehicle-details-panel"
+            onClick={(e) => e.stopPropagation()}
+            >
+            <div className="vehicle-details-header">
+                <div>
+                <h2>Vehicle Details</h2>
+                <p>Complete vehicle information</p>
+                </div>
+
+                <button
+                className="close-panel-button"
+                onClick={() => setSelectedVehicle(null)}
+                aria-label="Close vehicle details"
+                >
+                <X size={20} />
+                </button>
+            </div>
+
+            <div className="vehicle-identity">
+                <div className="vehicle-icon">
+                <Truck size={28} />
+                </div>
+                <div>
+                <h3>{selectedVehicle.vehicle_id.slice(0, 8)}</h3>
+                <span className={`vehicle-status ${selectedVehicle.status}`}>
+                    {selectedVehicle.status}
+                </span>
+                </div>
+            </div>
+
+            <div className="vehicle-detail-grid">
+                <div className="vehicle-detail-card">
+                <Gauge size={20} />
+                <span>Current Speed</span>
+                <strong>{Number(selectedVehicle.speed).toFixed(1)} km/h</strong>
+                </div>
+
+                <div className="vehicle-detail-card">
+                <Fuel size={20} />
+                <span>Fuel Level</span>
+                <strong>{Number(selectedVehicle.fuel_level).toFixed(1)}%</strong>
+                </div>
+            </div>
+
+            <div className="vehicle-detail-section">
+                <h4><MapPin size={18} /> Location Information</h4>
+
+                <div className="vehicle-detail-row">
+                <span>Latitude</span>
+                <strong>{Number(selectedVehicle.latitude).toFixed(6)}</strong>
+                </div>
+
+                <div className="vehicle-detail-row">
+                <span>Longitude</span>
+                <strong>{Number(selectedVehicle.longitude).toFixed(6)}</strong>
+                </div>
+            </div>
+
+            <div className="vehicle-detail-section">
+                <h4><Clock size={18} /> Telemetry Information</h4>
+
+                <div className="vehicle-detail-row">
+                <span>Last Updated</span>
+                <strong>
+                    {new Date(selectedVehicle.timestamp).toLocaleString()}
+                </strong>
+                </div>
+
+                <div className="vehicle-detail-row">
+                <span>Full Vehicle ID</span>
+                <strong className="full-vehicle-id">
+                    {selectedVehicle.vehicle_id}
+                </strong>
+                </div>
+            </div>
+            </aside>
+        </div>
+        )}
+
     </section>
   );
 }
