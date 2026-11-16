@@ -784,3 +784,146 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Analytics date range filter */
+
+.analytics-date-filter {
+  background: var(--card-bg, #111827);
+  border: 1px solid var(--border-color, #263244);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.date-filter-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.date-filter-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 6px;
+}
+
+.date-filter-heading p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.date-preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.date-preset-buttons button,
+.refresh-analytics-button,
+.apply-date-button {
+  border: 1px solid #334155;
+  border-radius: 7px;
+  padding: 9px 14px;
+  background: #1e293b;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.date-preset-buttons button:hover,
+.refresh-analytics-button:hover {
+  border-color: #38bdf8;
+}
+
+.date-preset-buttons button.active {
+  background: #0369a1;
+  border-color: #38bdf8;
+  color: white;
+}
+
+.custom-date-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+
+.custom-date-input {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.custom-date-input label {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.custom-date-input input {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: #e2e8f0;
+  padding: 9px;
+  color-scheme: dark;
+}
+
+.apply-date-button {
+  background: #0369a1;
+  border-color: #0284c7;
+  color: white;
+}
+
+.apply-date-button:hover {
+  background: #0284c7;
+}
+
+.refresh-analytics-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-analytics-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.analytics-period-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.spinning {
+  animation: analytics-spin 1s linear infinite;
+}
+
+@keyframes analytics-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .date-filter-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .custom-date-range {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-date-input input {
+    width: 100%;
+  }
+}

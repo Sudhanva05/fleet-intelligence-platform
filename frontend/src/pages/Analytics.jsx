@@ -7,6 +7,8 @@ import {
   Gauge,
   Fuel,
   AlertCircle,
+  Calendar,
+  RefreshCw,
 } from "lucide-react";
 
 import {
@@ -19,7 +21,11 @@ import {
   Tooltip,
 } from "recharts";
 
-import api, { getFleetOverview } from "../services/api";
+import api, {
+  getFleetOverview,
+  getFleetSpeedTrend,
+  getFleetFuelTrend,
+} from "../services/api";
 
 function Analytics() {
   const [overview, setOverview] = useState(null);
@@ -40,40 +46,154 @@ function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch fleet-wide analytics
+  // Date filter state
+  const [selectedRange, setSelectedRange] = useState("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [filterError, setFilterError] = useState("");
+
+  const [appliedDates, setAppliedDates] = useState({
+    startTime: "",
+    endTime: "",
+  });
+
+  // Convert a date to UTC ISO format without milliseconds.
+  // The backend interprets timezone-naive datetimes as UTC.
+  const toUtcDateTime = (date) => {
+    return date.toISOString().slice(0, 19);
+  };
+
+  // Convert datetime-local input into UTC.
+  const localInputToUtc = (value) => {
+    if (!value) return "";
+
+    return toUtcDateTime(new Date(value));
+  };
+
+  // Generate date range presets
+  const applyPreset = (range) => {
+    const now = new Date();
+
+    let start;
+
+    switch (range) {
+      case "24h":
+        start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+
+      case "7d":
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+
+      case "30d":
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+
+      case "all":
+      default:
+        setSelectedRange("all");
+        setAppliedDates({
+          startTime: "",
+          endTime: "",
+        });
+        setFilterError("");
+        return;
+    }
+
+    setSelectedRange(range);
+    setFilterError("");
+
+    setAppliedDates({
+      startTime: toUtcDateTime(start),
+      endTime: toUtcDateTime(now),
+    });
+  };
+
+  // Apply custom date range
+  const applyCustomRange = () => {
+    if (!customStart || !customEnd) {
+      setFilterError("Please select both start and end dates.");
+      return;
+    }
+
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+
+    if (start > end) {
+      setFilterError("Start date must be before end date.");
+      return;
+    }
+
+    setSelectedRange("custom");
+    setFilterError("");
+
+    setAppliedDates({
+      startTime: localInputToUtc(customStart),
+      endTime: localInputToUtc(customEnd),
+    });
+  };
+
+  // Fetch available analytics vehicles
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchVehicles = async () => {
+      try {
+        const response = await api.get("/analytics/vehicles");
+
+        if (!cancelled) {
+          setVehicles(response.data.vehicles ?? []);
+        }
+      } catch (err) {
+        console.error("Analytics vehicles error:", err);
+      }
+    };
+
+    fetchVehicles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Fetch fleet-wide analytics whenever date range changes
   useEffect(() => {
     let cancelled = false;
 
     const fetchAnalytics = async () => {
+      setLoading(true);
+      setError("");
+
       try {
         const [
           overviewData,
           speedResponse,
           fuelResponse,
-          vehiclesResponse,
         ] = await Promise.all([
-          getFleetOverview(),
-          api.get("/analytics/speed"),
-          api.get("/analytics/fuel"),
-          api.get("/analytics/vehicles"),
+          getFleetOverview(
+            appliedDates.startTime,
+            appliedDates.endTime
+          ),
+          getFleetSpeedTrend(
+            appliedDates.startTime,
+            appliedDates.endTime
+          ),
+          getFleetFuelTrend(
+            appliedDates.startTime,
+            appliedDates.endTime
+          ),
         ]);
 
         if (!cancelled) {
           setOverview(overviewData);
 
           setSpeedTrend(
-            speedResponse.data.speed_trend ?? []
+            speedResponse.speed_trend ?? []
           );
 
           setFuelTrend(
-            fuelResponse.data.fuel_trend ?? []
+            fuelResponse.fuel_trend ?? []
           );
-
-          setVehicles(
-            vehiclesResponse.data.vehicles ?? []
-          );
-
-          setError("");
         }
       } catch (err) {
         console.error("Analytics API error:", err);
@@ -95,7 +215,7 @@ function Analytics() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appliedDates]);
 
   // Fetch selected vehicle analytics
   useEffect(() => {
@@ -341,6 +461,130 @@ function Analytics() {
         </div>
       </div>
 
+      {/* Date Range Filters - Fleet Overview Only */}
+      {!selectedVehicle && (
+        <div className="analytics-date-filter">
+          <div className="date-filter-heading">
+            <div>
+              <h3>
+                <Calendar size={18} />
+                Analytics Period
+              </h3>
+              <p>
+                Filter fleet performance by telemetry date.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="refresh-analytics-button"
+              onClick={() => {
+                setAppliedDates((previous) => ({
+                  ...previous,
+                }));
+              }}
+              disabled={loading}
+              title="Refresh analytics"
+            >
+              <RefreshCw
+                size={16}
+                className={loading ? "spinning" : ""}
+              />
+              Refresh
+            </button>
+          </div>
+
+          <div className="date-preset-buttons">
+            <button
+              type="button"
+              className={selectedRange === "all" ? "active" : ""}
+              onClick={() => applyPreset("all")}
+            >
+              All Time
+            </button>
+
+            <button
+              type="button"
+              className={selectedRange === "24h" ? "active" : ""}
+              onClick={() => applyPreset("24h")}
+            >
+              Last 24 Hours
+            </button>
+
+            <button
+              type="button"
+              className={selectedRange === "7d" ? "active" : ""}
+              onClick={() => applyPreset("7d")}
+            >
+              Last 7 Days
+            </button>
+
+            <button
+              type="button"
+              className={selectedRange === "30d" ? "active" : ""}
+              onClick={() => applyPreset("30d")}
+            >
+              Last 30 Days
+            </button>
+          </div>
+
+          <div className="custom-date-range">
+            <div className="custom-date-input">
+              <label htmlFor="analytics-start-date">
+                Start Date
+              </label>
+
+              <input
+                id="analytics-start-date"
+                type="datetime-local"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+              />
+            </div>
+
+            <div className="custom-date-input">
+              <label htmlFor="analytics-end-date">
+                End Date
+              </label>
+
+              <input
+                id="analytics-end-date"
+                type="datetime-local"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="apply-date-button"
+              onClick={applyCustomRange}
+            >
+              Apply Range
+            </button>
+          </div>
+
+          {filterError && (
+            <div className="error-message">
+              <AlertCircle size={18} />
+              {filterError}
+            </div>
+          )}
+
+          {selectedRange === "all" && (
+            <p className="analytics-period-note">
+              Showing all available telemetry records.
+            </p>
+          )}
+
+          {selectedRange !== "all" && (
+            <p className="analytics-period-note">
+              Showing telemetry for the selected period.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Fleet Error */}
       {error && (
         <div className="error-message">
@@ -441,7 +685,7 @@ function Analytics() {
             ) : selectedVehicle && historyError ? (
               <p>{historyError}</p>
             ) : chartSpeedData.length === 0 ? (
-              <p>No speed data available.</p>
+              <p>No speed data available for this period.</p>
             ) : (
               <ResponsiveContainer
                 width="100%"
@@ -515,7 +759,7 @@ function Analytics() {
             ) : selectedVehicle && historyError ? (
               <p>{historyError}</p>
             ) : chartFuelData.length === 0 ? (
-              <p>No fuel data available.</p>
+              <p>No fuel data available for this period.</p>
             ) : (
               <ResponsiveContainer
                 width="100%"

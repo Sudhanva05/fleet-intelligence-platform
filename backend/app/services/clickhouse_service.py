@@ -1,10 +1,16 @@
 
 import os
+from datetime import datetime, timezone
 
 import clickhouse_connect
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+# --------------------------------------------------
+# CLICKHOUSE CONNECTION
+# --------------------------------------------------
 
 def execute_query(query, parameters=None):
     client = clickhouse_connect.get_client(
@@ -26,38 +32,155 @@ def check_clickhouse_connection():
     return result.result_rows[0][0]
 
 
-def get_total_events():
-    result = execute_query("""
+# --------------------------------------------------
+# REUSABLE DATE FILTER
+# --------------------------------------------------
+
+def normalize_datetime(value: datetime) -> str:
+    """
+    Convert datetime into UTC ISO format.
+
+    Naive datetimes are treated as UTC.
+    Timezone-aware datetimes are converted to UTC.
+    """
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    else:
+        value = value.astimezone(timezone.utc)
+
+    return value.isoformat()
+
+
+def build_time_filters(
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+):
+    """
+    Build reusable ClickHouse timestamp conditions.
+    """
+
+    conditions = []
+    parameters = {}
+
+    if start_time is not None:
+        conditions.append(
+            "timestamp >= parseDateTime64BestEffort("
+            "{start_time:String}, 6, 'UTC')"
+        )
+
+        parameters["start_time"] = normalize_datetime(start_time)
+
+    if end_time is not None:
+        conditions.append(
+            "timestamp <= parseDateTime64BestEffort("
+            "{end_time:String}, 6, 'UTC')"
+        )
+
+        parameters["end_time"] = normalize_datetime(end_time)
+
+    return conditions, parameters
+
+
+# --------------------------------------------------
+# TOTAL EVENTS
+# --------------------------------------------------
+
+def get_total_events(
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+):
+    conditions, parameters = build_time_filters(
+        start_time,
+        end_time
+    )
+
+    where_clause = (
+        f"WHERE {' AND '.join(conditions)}"
+        if conditions else ""
+    )
+
+    query = f"""
         SELECT count()
         FROM vehicle_telemetry
-    """)
+        {where_clause}
+    """
+
+    result = execute_query(
+        query,
+        parameters=parameters
+    )
 
     return result.result_rows[0][0]
 
 
-def get_fleet_statistics():
-    result = execute_query("""
+# --------------------------------------------------
+# FLEET STATISTICS
+# --------------------------------------------------
+
+def get_fleet_statistics(
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+):
+    conditions, parameters = build_time_filters(
+        start_time,
+        end_time
+    )
+
+    where_clause = (
+        f"WHERE {' AND '.join(conditions)}"
+        if conditions else ""
+    )
+
+    query = f"""
         SELECT
             count() AS total_events,
             uniqExact(vehicle_id) AS total_vehicles,
-            round(avg(speed), 2) AS average_speed,
-            round(avg(fuel_level), 2) AS average_fuel
+            ifNull(round(avgOrNull(speed), 2), 0) AS average_speed,
+            ifNull(round(avgOrNull(fuel_level), 2), 0) AS average_fuel
         FROM vehicle_telemetry
-    """)
+        {where_clause}
+    """
+
+    result = execute_query(
+        query,
+        parameters=parameters
+    )
 
     return result.result_rows[0]
 
 
+# --------------------------------------------------
+# SPEED TREND
+# --------------------------------------------------
 
-def get_speed_trend():
-    result = execute_query("""
+def get_speed_trend(
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+):
+    conditions, parameters = build_time_filters(
+        start_time,
+        end_time
+    )
+
+    where_clause = (
+        f"WHERE {' AND '.join(conditions)}"
+        if conditions else ""
+    )
+
+    query = f"""
         SELECT
             toStartOfMinute(timestamp) AS time,
             round(avg(speed), 2) AS average_speed
         FROM vehicle_telemetry
+        {where_clause}
         GROUP BY time
         ORDER BY time
-    """)
+    """
+
+    result = execute_query(
+        query,
+        parameters=parameters
+    )
 
     return [
         {
@@ -68,15 +191,38 @@ def get_speed_trend():
     ]
 
 
-def get_fuel_trend():
-    result = execute_query("""
+# --------------------------------------------------
+# FUEL TREND
+# --------------------------------------------------
+
+def get_fuel_trend(
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+):
+    conditions, parameters = build_time_filters(
+        start_time,
+        end_time
+    )
+
+    where_clause = (
+        f"WHERE {' AND '.join(conditions)}"
+        if conditions else ""
+    )
+
+    query = f"""
         SELECT
             toStartOfMinute(timestamp) AS time,
             round(avg(fuel_level), 2) AS average_fuel
         FROM vehicle_telemetry
+        {where_clause}
         GROUP BY time
         ORDER BY time
-    """)
+    """
+
+    result = execute_query(
+        query,
+        parameters=parameters
+    )
 
     return [
         {
@@ -86,6 +232,10 @@ def get_fuel_trend():
         for row in result.result_rows
     ]
 
+
+# --------------------------------------------------
+# INDIVIDUAL VEHICLE ANALYTICS
+# --------------------------------------------------
 
 def get_vehicle_analytics(vehicle_id: str):
     result = execute_query("""
@@ -117,37 +267,28 @@ def get_vehicle_analytics(vehicle_id: str):
     }
 
 
-
-
-from datetime import datetime, timezone
+# --------------------------------------------------
+# INDIVIDUAL VEHICLE HISTORY
+# --------------------------------------------------
 
 def get_vehicle_history(
     vehicle_id: str,
     start_time: datetime | None = None,
     end_time: datetime | None = None
-    ):
+):
     conditions = ["vehicle_id = {vehicle_id:UUID}"]
-    parameters = {"vehicle_id": vehicle_id}
 
-    if start_time is not None:
-        conditions.append(
-            "timestamp >= parseDateTime64BestEffort({start_time:String}, 6, 'UTC')"
-        )
-        parameters["start_time"] = (
-            start_time.astimezone(timezone.utc).isoformat()
-            if start_time.tzinfo
-            else start_time.replace(tzinfo=timezone.utc).isoformat()
-        )
+    parameters = {
+        "vehicle_id": vehicle_id
+    }
 
-    if end_time is not None:
-        conditions.append(
-            "timestamp <= parseDateTime64BestEffort({end_time:String}, 6, 'UTC')"
-        )
-        parameters["end_time"] = (
-            end_time.astimezone(timezone.utc).isoformat()
-            if end_time.tzinfo
-            else end_time.replace(tzinfo=timezone.utc).isoformat()
-        )
+    time_conditions, time_parameters = build_time_filters(
+        start_time,
+        end_time
+    )
+
+    conditions.extend(time_conditions)
+    parameters.update(time_parameters)
 
     query = f"""
         SELECT
@@ -162,7 +303,10 @@ def get_vehicle_history(
         ORDER BY timestamp ASC
     """
 
-    result = execute_query(query, parameters=parameters)
+    result = execute_query(
+        query,
+        parameters=parameters
+    )
 
     return [
         {
@@ -176,6 +320,10 @@ def get_vehicle_history(
         for row in result.result_rows
     ]
 
+
+# --------------------------------------------------
+# ANALYTICS VEHICLES
+# --------------------------------------------------
 
 def get_analytics_vehicles():
     result = execute_query("""
