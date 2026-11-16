@@ -1,5 +1,4 @@
-
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -51,10 +50,103 @@ function FitRouteBounds({ positions }) {
   return null;
 }
 
+// Smoothly animate the vehicle between GPS coordinates.
+function AnimatedVehicle({
+  targetPosition,
+  currentRecord,
+  autoFollow,
+}) {
+  const map = useMap();
+
+  const [position, setPosition] = useState(targetPosition);
+
+  useEffect(() => {
+    if (!targetPosition) return;
+
+    const startPosition = position;
+    const endPosition = targetPosition;
+
+    const duration = 450;
+    let animationFrame;
+    let startTime = null;
+
+    const animate = (timestamp) => {
+      if (startTime === null) {
+        startTime = timestamp;
+      }
+
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Smooth ease-in-out interpolation.
+      const eased =
+        progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+      const latitude =
+        startPosition[0] +
+        (endPosition[0] - startPosition[0]) * eased;
+
+      const longitude =
+        startPosition[1] +
+        (endPosition[1] - startPosition[1]) * eased;
+
+      const newPosition = [latitude, longitude];
+
+      setPosition(newPosition);
+
+      // Keep the map centered on the vehicle when enabled.
+      if (autoFollow) {
+        map.setView(newPosition, map.getZoom(), {
+          animate: false,
+        });
+      }
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+    };
+
+    // Position is intentionally the starting point for each animation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetPosition, autoFollow, map]);
+
+  return (
+    <Marker position={position} icon={vehicleIcon}>
+      <Popup>
+        <strong>Historical Vehicle</strong>
+
+        <p>
+          Speed: {Number(currentRecord.speed).toFixed(1)} km/h
+        </p>
+
+        <p>
+          Fuel: {Number(currentRecord.fuel_level).toFixed(1)}%
+        </p>
+
+        <p>
+          Heading: {Number(currentRecord.heading).toFixed(1)}°
+        </p>
+
+        <p>Time: {currentRecord.timestamp}</p>
+      </Popup>
+    </Marker>
+  );
+}
+
 function HistoricalRouteMap({
   history = [],
   currentIndex = 0,
 }) {
+  const [autoFollow, setAutoFollow] = useState(true);
+
   const validHistory = useMemo(
     () =>
       history.filter(
@@ -89,16 +181,49 @@ function HistoricalRouteMap({
 
   const currentRecord = validHistory[safeIndex];
 
+  const targetPosition = [
+    Number(currentRecord.latitude),
+    Number(currentRecord.longitude),
+  ];
+
   return (
     <div
       className="historical-route-map"
-      style={{ height: "500px", width: "100%" }}
+      style={{
+        height: "500px",
+        width: "100%",
+        position: "relative",
+      }}
     >
+      {/* Auto-follow control */}
+      <button
+        onClick={() => setAutoFollow((previous) => !previous)}
+        style={{
+          position: "absolute",
+          top: "12px",
+          right: "12px",
+          zIndex: 1000,
+          padding: "9px 14px",
+          border: "none",
+          borderRadius: "8px",
+          background: autoFollow ? "#0ea5e9" : "#ffffff",
+          color: autoFollow ? "#ffffff" : "#1f2937",
+          fontWeight: 600,
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+        }}
+      >
+        {autoFollow ? "Auto-follow: ON" : "Auto-follow: OFF"}
+      </button>
+
       <MapContainer
         center={positions[0]}
         zoom={14}
         scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -147,22 +272,12 @@ function HistoricalRouteMap({
           </CircleMarker>
         )}
 
-        {/* Current playback vehicle */}
-        <Marker
-          position={[
-            Number(currentRecord.latitude),
-            Number(currentRecord.longitude),
-          ]}
-          icon={vehicleIcon}
-        >
-          <Popup>
-            <strong>Historical Vehicle</strong>
-            <p>Speed: {Number(currentRecord.speed).toFixed(1)} km/h</p>
-            <p>Fuel: {Number(currentRecord.fuel_level).toFixed(1)}%</p>
-            <p>Heading: {Number(currentRecord.heading).toFixed(1)}°</p>
-            <p>Time: {currentRecord.timestamp}</p>
-          </Popup>
-        </Marker>
+        {/* Animated playback vehicle */}
+        <AnimatedVehicle
+          targetPosition={targetPosition}
+          currentRecord={currentRecord}
+          autoFollow={autoFollow}
+        />
       </MapContainer>
     </div>
   );
