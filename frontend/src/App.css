@@ -927,3 +927,35 @@
     width: 100%;
   }
 }
+
+.analytics-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.download-pdf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  background: #0369a1;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.download-pdf-button:hover {
+  background: #0284c7;
+}
+
+.download-pdf-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
