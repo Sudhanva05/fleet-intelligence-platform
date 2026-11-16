@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
 import Analytics from "./pages/Analytics";
+import HistoricalPlayback from "./pages/HistoricalPlayback";
 
 import "./App.css";
 
@@ -27,6 +28,10 @@ function AppLayout() {
     "/analytics": {
       title: "Fleet Analytics",
       subtitle: "Historical performance and telemetry insights.",
+    },
+    "/playback": {
+      title: "Historical Playback",
+      subtitle: "Replay historical vehicle journeys and telemetry.",
     },
   };
 
@@ -55,6 +60,7 @@ function AppLayout() {
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/tracking" element={<LiveTracking />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/playback" element={<HistoricalPlayback />} />
         </Routes>
       </main>
     </div>

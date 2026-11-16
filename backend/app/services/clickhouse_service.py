@@ -118,8 +118,38 @@ def get_vehicle_analytics(vehicle_id: str):
 
 
 
-def get_vehicle_history(vehicle_id: str):
-    result = execute_query("""
+
+from datetime import datetime, timezone
+
+def get_vehicle_history(
+    vehicle_id: str,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None
+    ):
+    conditions = ["vehicle_id = {vehicle_id:UUID}"]
+    parameters = {"vehicle_id": vehicle_id}
+
+    if start_time is not None:
+        conditions.append(
+            "timestamp >= parseDateTime64BestEffort({start_time:String}, 6, 'UTC')"
+        )
+        parameters["start_time"] = (
+            start_time.astimezone(timezone.utc).isoformat()
+            if start_time.tzinfo
+            else start_time.replace(tzinfo=timezone.utc).isoformat()
+        )
+
+    if end_time is not None:
+        conditions.append(
+            "timestamp <= parseDateTime64BestEffort({end_time:String}, 6, 'UTC')"
+        )
+        parameters["end_time"] = (
+            end_time.astimezone(timezone.utc).isoformat()
+            if end_time.tzinfo
+            else end_time.replace(tzinfo=timezone.utc).isoformat()
+        )
+
+    query = f"""
         SELECT
             timestamp,
             latitude,
@@ -128,9 +158,11 @@ def get_vehicle_history(vehicle_id: str):
             heading,
             fuel_level
         FROM vehicle_telemetry
-        WHERE vehicle_id = {vehicle_id:UUID}
+        WHERE {" AND ".join(conditions)}
         ORDER BY timestamp ASC
-    """, parameters={"vehicle_id": vehicle_id})
+    """
+
+    result = execute_query(query, parameters=parameters)
 
     return [
         {
@@ -143,6 +175,7 @@ def get_vehicle_history(vehicle_id: str):
         }
         for row in result.result_rows
     ]
+
 
 def get_analytics_vehicles():
     result = execute_query("""

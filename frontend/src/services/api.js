@@ -16,4 +16,28 @@ export const getFleetOverview = async () => {
   return response.data;
 };
 
+
+export const getAnalyticsVehicles = async () => {
+  const response = await api.get("/analytics/vehicles");
+  return response.data;
+};
+
+export const getVehicleHistory = async (
+  vehicleId,
+  startTime,
+  endTime
+) => {
+  const response = await api.get(
+    `/analytics/vehicle/${vehicleId}/history`,
+    {
+      params: {
+        start_time: startTime || undefined,
+        end_time: endTime || undefined,
+      },
+    }
+  );
+
+  return response.data;
+};
+
 export default api;

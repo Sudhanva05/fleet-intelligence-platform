@@ -5,6 +5,7 @@ import {
   BarChart3,
   MapPin,
   Settings,
+  History,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -38,6 +39,11 @@ const Sidebar = () => {
         <NavLink to="/analytics" className="nav-item">
           <BarChart3 size={20} />
           <span>Analytics</span>
+        </NavLink>
+
+        <NavLink to="/playback" className="nav-item">
+          <History size={20} />
+          <span>Historical Playback</span>
         </NavLink>
 
         <a href="#" className="nav-item">
