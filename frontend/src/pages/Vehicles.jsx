@@ -1,18 +1,36 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-    Search,
-    RefreshCw,
-    Truck,
-    Activity,
-    WifiOff,
-    X,
-    MapPin,
-    Clock,
-    Gauge,
-    Fuel,
-  } from "lucide-react";
+  Search,
+  RefreshCw,
+  Truck,
+  Activity,
+  WifiOff,
+  X,
+  MapPin,
+  Clock,
+  Gauge,
+  Fuel,
+  Play,
+  Pause,
+  AlertTriangle,
+} from "lucide-react";
+
 import api, { getVehicleSummary } from "../services/api";
+
+const LOW_FUEL_THRESHOLD = 20;
+
+function getOperationalStatus(vehicle) {
+  if (vehicle.status !== "active") {
+    return "inactive";
+  }
+
+  const speed = Number(vehicle.speed) || 0;
+
+  if (speed >= 20) return "moving";
+  if (speed > 0) return "slow";
+  return "idle";
+}
 
 function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
@@ -21,6 +39,8 @@ function Vehicles() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -47,6 +67,7 @@ function Vehicles() {
       } finally {
         if (!cancelled) {
           setLoading(false);
+          setRefreshing(false);
         }
       }
     };
@@ -59,20 +80,40 @@ function Vehicles() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [refreshKey]);
 
   const filteredVehicles = useMemo(() => {
     return vehicles.filter((vehicle) => {
-      const matchesSearch = vehicle.vehicle_id
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
+      const vehicleId = vehicle.vehicle_id?.toLowerCase() ?? "";
+      const matchesSearch = vehicleId.includes(search.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === "all" || vehicle.status === statusFilter;
+      const operationalStatus = getOperationalStatus(vehicle);
+      const fuelLevel = Number(vehicle.fuel_level) || 0;
+
+      let matchesStatus = true;
+
+      if (statusFilter === "active" || statusFilter === "stale") {
+        matchesStatus = vehicle.status === statusFilter;
+      } else if (
+        ["moving", "slow", "idle", "inactive"].includes(statusFilter)
+      ) {
+        matchesStatus = operationalStatus === statusFilter;
+      } else if (statusFilter === "low-fuel") {
+        matchesStatus = fuelLevel <= LOW_FUEL_THRESHOLD;
+      }
 
       return matchesSearch && matchesStatus;
     });
   }, [vehicles, search, statusFilter]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey((previous) => previous + 1);
+  };
+
+  const selectedOperationalStatus = selectedVehicle
+    ? getOperationalStatus(selectedVehicle)
+    : "";
 
   return (
     <section className="dashboard-content vehicles-page">
@@ -85,6 +126,7 @@ function Vehicles() {
 
       {error && <p className="error-message">{error}</p>}
 
+      {/* Fleet Summary */}
       <div className="stats-grid">
         <div className="stat-card">
           <Truck />
@@ -105,6 +147,7 @@ function Vehicles() {
         </div>
       </div>
 
+      {/* Search and Filters */}
       <div className="vehicle-toolbar">
         <div className="vehicle-search">
           <Search size={18} />
@@ -120,26 +163,37 @@ function Vehicles() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">All Statuses</option>
+          <option value="all">All Vehicles</option>
           <option value="active">Active</option>
           <option value="stale">Stale</option>
+          <option value="moving">Moving</option>
+          <option value="slow">Slow Moving</option>
+          <option value="idle">Idle</option>
+          <option value="inactive">Inactive</option>
+          <option value="low-fuel">Low Fuel</option>
         </select>
 
         <button
           className="refresh-button"
-          onClick={() => window.location.reload()}
-          title="Refresh page"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Refresh vehicles"
         >
-          <RefreshCw size={17} />
+          <RefreshCw
+            size={17}
+            className={refreshing ? "spinning" : ""}
+          />
         </button>
       </div>
 
+      {/* Vehicle Table */}
       <div className="vehicle-table-container">
         <table className="vehicle-table">
           <thead>
             <tr>
               <th>Vehicle ID</th>
-              <th>Status</th>
+              <th>Connection</th>
+              <th>Operational Status</th>
               <th>Speed</th>
               <th>Fuel</th>
               <th>Latitude</th>
@@ -151,36 +205,64 @@ function Vehicles() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7">Loading vehicles...</td>
+                <td colSpan="8">Loading vehicles...</td>
               </tr>
             ) : filteredVehicles.length === 0 ? (
               <tr>
-                <td colSpan="7">No vehicles found.</td>
+                <td colSpan="8">No vehicles found.</td>
               </tr>
             ) : (
-              filteredVehicles.map((vehicle) => (
-                <tr
+              filteredVehicles.map((vehicle) => {
+                const operationalStatus = getOperationalStatus(vehicle);
+                const fuelLevel = Number(vehicle.fuel_level) || 0;
+                const lowFuel = fuelLevel <= LOW_FUEL_THRESHOLD;
+
+                return (
+                  <tr
                     key={vehicle.vehicle_id}
                     onClick={() => setSelectedVehicle(vehicle)}
                     className="clickable-vehicle-row"
-                >
-                  <td>{vehicle.vehicle_id.slice(0, 8)}</td>
+                  >
+                    <td>{vehicle.vehicle_id.slice(0, 8)}</td>
 
-                  <td>
-                    <span className={`vehicle-status ${vehicle.status}`}>
-                      {vehicle.status}
-                    </span>
-                  </td>
+                    <td>
+                      <span className={`vehicle-status ${vehicle.status}`}>
+                        {vehicle.status}
+                      </span>
+                    </td>
 
-                  <td>{Number(vehicle.speed).toFixed(1)} km/h</td>
-                  <td>{Number(vehicle.fuel_level).toFixed(1)}%</td>
-                  <td>{Number(vehicle.latitude).toFixed(5)}</td>
-                  <td>{Number(vehicle.longitude).toFixed(5)}</td>
-                  <td>
-                    {new Date(vehicle.timestamp).toLocaleString()}
-                  </td>
-                </tr>
-              ))
+                    <td>
+                      <span
+                        className={`vehicle-operational-status ${operationalStatus}`}
+                      >
+                        {operationalStatus}
+                      </span>
+                    </td>
+
+                    <td>
+                      {(Number(vehicle.speed) || 0).toFixed(1)} km/h
+                    </td>
+
+                    <td>
+                      <span className={lowFuel ? "fuel-warning" : ""}>
+                        {fuelLevel.toFixed(1)}%
+                      </span>
+                      {lowFuel && (
+                        <span className="low-fuel-label">
+                          Low fuel
+                        </span>
+                      )}
+                    </td>
+
+                    <td>{Number(vehicle.latitude).toFixed(5)}</td>
+                    <td>{Number(vehicle.longitude).toFixed(5)}</td>
+
+                    <td>
+                      {new Date(vehicle.timestamp).toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -190,88 +272,138 @@ function Vehicles() {
         Showing {filteredVehicles.length} of {vehicles.length} vehicles
       </p>
 
-        {selectedVehicle && (
-        <div className="vehicle-details-overlay" onClick={() => setSelectedVehicle(null)}>
-            <aside
+      {/* Vehicle Details Panel */}
+      {selectedVehicle && (
+        <div
+          className="vehicle-details-overlay"
+          onClick={() => setSelectedVehicle(null)}
+        >
+          <aside
             className="vehicle-details-panel"
             onClick={(e) => e.stopPropagation()}
-            >
+          >
             <div className="vehicle-details-header">
-                <div>
+              <div>
                 <h2>Vehicle Details</h2>
                 <p>Complete vehicle information</p>
-                </div>
+              </div>
 
-                <button
+              <button
                 className="close-panel-button"
                 onClick={() => setSelectedVehicle(null)}
                 aria-label="Close vehicle details"
-                >
+              >
                 <X size={20} />
-                </button>
+              </button>
             </div>
 
             <div className="vehicle-identity">
-                <div className="vehicle-icon">
+              <div className="vehicle-icon">
                 <Truck size={28} />
-                </div>
-                <div>
+              </div>
+
+              <div>
                 <h3>{selectedVehicle.vehicle_id.slice(0, 8)}</h3>
-                <span className={`vehicle-status ${selectedVehicle.status}`}>
-                    {selectedVehicle.status}
+
+                <span
+                  className={`vehicle-status ${selectedVehicle.status}`}
+                >
+                  {selectedVehicle.status}
                 </span>
-                </div>
+              </div>
             </div>
 
             <div className="vehicle-detail-grid">
-                <div className="vehicle-detail-card">
+              <div className="vehicle-detail-card">
                 <Gauge size={20} />
                 <span>Current Speed</span>
-                <strong>{Number(selectedVehicle.speed).toFixed(1)} km/h</strong>
-                </div>
+                <strong>
+                  {(Number(selectedVehicle.speed) || 0).toFixed(1)} km/h
+                </strong>
+              </div>
 
-                <div className="vehicle-detail-card">
+              <div className="vehicle-detail-card">
                 <Fuel size={20} />
                 <span>Fuel Level</span>
-                <strong>{Number(selectedVehicle.fuel_level).toFixed(1)}%</strong>
-                </div>
+                <strong>
+                  {(Number(selectedVehicle.fuel_level) || 0).toFixed(1)}%
+                </strong>
+              </div>
             </div>
 
             <div className="vehicle-detail-section">
-                <h4><MapPin size={18} /> Location Information</h4>
+              <h4>
+                <Activity size={18} /> Operational Information
+              </h4>
 
-                <div className="vehicle-detail-row">
+              <div className="vehicle-detail-row">
+                <span>Operational Status</span>
+                <strong
+                  className={`vehicle-operational-text ${selectedOperationalStatus}`}
+                >
+                  {selectedOperationalStatus}
+                </strong>
+              </div>
+
+              <div className="vehicle-detail-row">
+                <span>Fuel Condition</span>
+                <strong
+                  className={
+                    Number(selectedVehicle.fuel_level) <= LOW_FUEL_THRESHOLD
+                      ? "fuel-warning"
+                      : ""
+                  }
+                >
+                  {Number(selectedVehicle.fuel_level).toFixed(1) <=
+                  LOW_FUEL_THRESHOLD
+                    ? "Low Fuel"
+                    : "Normal"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="vehicle-detail-section">
+              <h4>
+                <MapPin size={18} /> Location Information
+              </h4>
+
+              <div className="vehicle-detail-row">
                 <span>Latitude</span>
-                <strong>{Number(selectedVehicle.latitude).toFixed(6)}</strong>
-                </div>
+                <strong>
+                  {Number(selectedVehicle.latitude).toFixed(6)}
+                </strong>
+              </div>
 
-                <div className="vehicle-detail-row">
+              <div className="vehicle-detail-row">
                 <span>Longitude</span>
-                <strong>{Number(selectedVehicle.longitude).toFixed(6)}</strong>
-                </div>
+                <strong>
+                  {Number(selectedVehicle.longitude).toFixed(6)}
+                </strong>
+              </div>
             </div>
 
             <div className="vehicle-detail-section">
-                <h4><Clock size={18} /> Telemetry Information</h4>
+              <h4>
+                <Clock size={18} /> Telemetry Information
+              </h4>
 
-                <div className="vehicle-detail-row">
+              <div className="vehicle-detail-row">
                 <span>Last Updated</span>
                 <strong>
-                    {new Date(selectedVehicle.timestamp).toLocaleString()}
+                  {new Date(selectedVehicle.timestamp).toLocaleString()}
                 </strong>
-                </div>
+              </div>
 
-                <div className="vehicle-detail-row">
+              <div className="vehicle-detail-row">
                 <span>Full Vehicle ID</span>
                 <strong className="full-vehicle-id">
-                    {selectedVehicle.vehicle_id}
+                  {selectedVehicle.vehicle_id}
                 </strong>
-                </div>
+              </div>
             </div>
-            </aside>
+          </aside>
         </div>
-        )}
-
+      )}
     </section>
   );
 }

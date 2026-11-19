@@ -1,6 +1,16 @@
 
 import { useEffect, useState } from "react";
-import { Truck, Activity, Gauge, Fuel } from "lucide-react";
+import {
+  Truck,
+  Activity,
+  Gauge,
+  Fuel,
+  Play,
+  Pause,
+  Clock,
+  AlertTriangle,
+  TrendingUp,
+} from "lucide-react";
 
 import StatCard from "../components/StatCard";
 import FleetMap from "../components/FleetMap";
@@ -15,22 +25,29 @@ import api from "../services/api";
 function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [overview, setOverview] = useState(null);
+  const [operational, setOperational] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [vehicleData, analyticsData, fleetData] =
-          await Promise.all([
-            getVehicleSummary(),
-            getFleetOverview(),
-            api.get("/vehicles/"),
-          ]);
+        const [
+          vehicleData,
+          analyticsData,
+          fleetData,
+          operationalData,
+        ] = await Promise.all([
+          getVehicleSummary(),
+          getFleetOverview(),
+          api.get("/vehicles/"),
+          api.get("/vehicles/operational-summary"),
+        ]);
 
         setSummary(vehicleData);
         setOverview(analyticsData);
         setVehicles(fleetData.data.vehicles);
+        setOperational(operationalData.data);
         setError("");
       } catch (err) {
         console.error("Dashboard API error:", err);
@@ -56,6 +73,7 @@ function Dashboard() {
 
       {error && <p className="error-message">{error}</p>}
 
+      {/* Main Fleet Statistics */}
       <div className="stats-grid">
         <StatCard
           title="Total Vehicles"
@@ -88,6 +106,60 @@ function Dashboard() {
         />
       </div>
 
+      {/* Live Operational Metrics */}
+      <div className="section-heading">
+        <div>
+          <h2>Live Operations</h2>
+          <p>Real-time vehicle activity and fleet utilization</p>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard
+          title="Moving"
+          value={operational?.moving}
+          icon={Play}
+          color="green"
+        />
+
+        <StatCard
+          title="Slow Moving"
+          value={operational?.slow}
+          icon={Clock}
+          color="orange"
+        />
+
+        <StatCard
+          title="Idle"
+          value={operational?.idle}
+          icon={Pause}
+          color="blue"
+        />
+
+        <StatCard
+          title="Inactive"
+          value={operational?.inactive_vehicles}
+          icon={AlertTriangle}
+          color="purple"
+        />
+
+        <StatCard
+          title="Fleet Utilization"
+          value={operational?.fleet_utilization}
+          unit="%"
+          icon={TrendingUp}
+          color="green"
+        />
+
+        <StatCard
+          title="Low Fuel Vehicles"
+          value={operational?.low_fuel_vehicles}
+          icon={Fuel}
+          color="orange"
+        />
+      </div>
+
+      {/* Existing Fleet Map - Preserved */}
       <div className="map-section">
         <div className="section-heading">
           <div>
