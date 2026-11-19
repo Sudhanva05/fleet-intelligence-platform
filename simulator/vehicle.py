@@ -14,6 +14,10 @@ class Vehicle:
     fuel_level: float
     timestamp: datetime
 
+    # Operating state
+    state: str = "moving"
+    state_duration_remaining: float = 0.0
+
     @staticmethod
     def create():
         return Vehicle(

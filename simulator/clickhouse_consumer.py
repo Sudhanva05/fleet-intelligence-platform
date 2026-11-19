@@ -2,14 +2,14 @@
 import json
 import time
 import uuid
-from datetime import datetime
 import os
+from datetime import datetime
+
 from dotenv import load_dotenv
+import clickhouse_connect
+from confluent_kafka import Consumer, TopicPartition
 
 load_dotenv()
-
-import clickhouse_connect
-from confluent_kafka import Consumer
 
 
 # -------------------------------
@@ -76,24 +76,54 @@ def parse_telemetry(payload):
 
 
 # -------------------------------
-# Batch insertion
+# Batch insertion and offset commit
 # -------------------------------
 
-def flush_batch(batch):
+def flush_batch(batch, offsets):
     if not batch:
         return
 
-    # Insert telemetry into ClickHouse
+    batch_size = len(batch)
+
+    # Step 1: Insert into ClickHouse first.
+    # If this fails, do not commit Kafka offsets.
     clickhouse.insert(
         TABLE,
         batch,
         column_names=COLUMNS
     )
 
-    # Commit Kafka offsets only after successful insertion
-    consumer.commit(asynchronous=False)
+    print(f"Inserted {batch_size} telemetry records into ClickHouse")
 
-    print(f"Inserted {len(batch)} telemetry records into ClickHouse")
+    # Step 2: Prepare explicit Kafka offsets.
+    # Kafka commits the NEXT offset to read, hence offset + 1.
+    commit_offsets = [
+        TopicPartition(topic, partition, next_offset)
+        for (topic, partition), next_offset in offsets.items()
+    ]
+
+    # Step 3: Clear the inserted batch before committing.
+    # This prevents the shutdown handler from inserting it again
+    # if the Kafka commit fails.
+    batch.clear()
+    offsets.clear()
+
+    # Step 4: Commit only after successful ClickHouse insertion.
+    try:
+        consumer.commit(
+            offsets=commit_offsets,
+            asynchronous=False
+        )
+
+        print("Kafka offsets committed successfully")
+
+    except Exception as error:
+        print(f"WARNING: Kafka offset commit failed: {error}")
+        print(
+            "Records were inserted into ClickHouse, but Kafka may "
+            "replay them after restart."
+        )
+        raise
 
 
 # -------------------------------
@@ -102,6 +132,10 @@ def flush_batch(batch):
 
 def main():
     batch = []
+
+    # Tracks the next offset to commit for each partition.
+    offsets = {}
+
     last_flush = time.monotonic()
 
     consumer.subscribe([TOPIC])
@@ -119,10 +153,17 @@ def main():
                 if message.error():
                     raise RuntimeError(str(message.error()))
 
-                payload = json.loads(message.value().decode("utf-8"))
+                payload = json.loads(
+                    message.value().decode("utf-8")
+                )
 
                 row = parse_telemetry(payload)
                 batch.append(row)
+
+                # Record the next offset for this message's partition.
+                offsets[
+                    (message.topic(), message.partition())
+                ] = message.offset() + 1
 
             elapsed = time.monotonic() - last_flush
 
@@ -130,8 +171,8 @@ def main():
                 len(batch) >= BATCH_SIZE
                 or elapsed >= FLUSH_INTERVAL
             ):
-                flush_batch(batch)
-                batch.clear()
+
+                flush_batch(batch, offsets)
                 last_flush = time.monotonic()
 
     except KeyboardInterrupt:
@@ -139,9 +180,10 @@ def main():
 
     finally:
         try:
+            # Insert any remaining records before shutting down.
             if batch:
-                flush_batch(batch)
-                batch.clear()
+                print("Flushing remaining records...")
+                flush_batch(batch, offsets)
 
         finally:
             consumer.close()
