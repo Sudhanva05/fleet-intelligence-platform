@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.routers import vehicles
 from backend.app.routers import analytics
+from backend.app.routers import alerts
+
 
 app = FastAPI(
     title="Fleet Intelligence API",
@@ -11,7 +13,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Allow our React frontend to communicate with FastAPI
+
+# --------------------------------------------------
+# CORS
+# --------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -20,13 +26,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# --------------------------------------------------
+# ROUTERS
+# --------------------------------------------------
+
 app.include_router(vehicles.router)
 app.include_router(analytics.router)
+app.include_router(alerts.router)
+
+
+# --------------------------------------------------
+# ROOT
+# --------------------------------------------------
 
 @app.get("/")
 def root():
-    return {"message": "Fleet Intelligence API is running"}
+
+    return {
+        "message": "Fleet Intelligence API is running"
+    }
+
+
+# --------------------------------------------------
+# HEALTH CHECK
+# --------------------------------------------------
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+
+    return {
+        "status": "healthy"
+    }

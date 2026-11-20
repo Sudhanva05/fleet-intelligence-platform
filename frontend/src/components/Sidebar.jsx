@@ -6,13 +6,16 @@ import {
   MapPin,
   Settings,
   History,
+  BellRing,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
 
+
 const Sidebar = () => {
   return (
     <aside className="sidebar">
+
       <div className="sidebar-logo">
         <Truck size={28} />
         <h2>FleetIQ</h2>
@@ -21,6 +24,7 @@ const Sidebar = () => {
       <p className="sidebar-label">MAIN MENU</p>
 
       <nav className="sidebar-nav">
+
         <NavLink to="/" end className="nav-item">
           <LayoutDashboard size={20} />
           <span>Dashboard</span>
@@ -46,13 +50,20 @@ const Sidebar = () => {
           <span>Historical Playback</span>
         </NavLink>
 
+        <NavLink to="/alerts" className="nav-item">
+          <BellRing size={20} />
+          <span>Alerts</span>
+        </NavLink>
+
         <a href="#" className="nav-item">
           <Settings size={20} />
           <span>Settings</span>
         </a>
+
       </nav>
     </aside>
   );
 };
+
 
 export default Sidebar;

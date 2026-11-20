@@ -1038,3 +1038,459 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+
+/* ==================================================
+   FLEET ALERTS PAGE
+================================================== */
+
+.alerts-page {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.alerts-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.alerts-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.alert-critical-number {
+  color: #f87171 !important;
+}
+
+.alert-warning-number {
+  color: #fb923c !important;
+}
+
+
+/* ==================================================
+   ALERT SECTIONS
+================================================== */
+
+.alerts-section {
+  background: #111827;
+  border: 1px solid #263244;
+  border-radius: 14px;
+  padding: 24px;
+  min-width: 0;
+}
+
+.alerts-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.alerts-section-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f8fafc;
+  font-size: 18px;
+  margin-bottom: 7px;
+}
+
+.alerts-section-heading h3 svg {
+  color: #38bdf8;
+}
+
+.alerts-section-heading p {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.alerts-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 20px;
+  background: #142c29;
+  color: #4ade80;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.alerts-live-indicator span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.history-total {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+
+/* ==================================================
+   ACTIVE ALERT CARDS
+================================================== */
+
+.active-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.active-alert-card {
+  min-width: 0;
+  background: #172033;
+  border: 1px solid #334155;
+  border-left: 4px solid #64748b;
+  border-radius: 11px;
+  padding: 18px;
+}
+
+.active-alert-card.critical {
+  border-left-color: #ef4444;
+}
+
+.active-alert-card.warning {
+  border-left-color: #f59e0b;
+}
+
+.active-alert-card.unknown {
+  border-left-color: #64748b;
+}
+
+.active-alert-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+
+.active-alert-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+.active-alert-card.critical .active-alert-icon {
+  background: #451a1a;
+  color: #f87171;
+}
+
+.active-alert-card.warning .active-alert-icon {
+  background: #3b291d;
+  color: #fb923c;
+}
+
+.active-alert-card h4 {
+  color: #f8fafc;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.active-alert-vehicle {
+  color: #94a3b8;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.active-alert-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #334155;
+}
+
+.active-alert-value span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.active-alert-value strong {
+  color: #f8fafc;
+  font-size: 15px;
+}
+
+.active-alert-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 15px;
+  color: #94a3b8;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+.alerts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 45px 20px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.alerts-empty-state svg {
+  color: #4ade80;
+}
+
+.alerts-empty-state strong {
+  color: #e2e8f0;
+  font-size: 15px;
+}
+
+.alerts-empty-state span {
+  font-size: 13px;
+}
+
+
+/* ==================================================
+   ALERT BADGES
+================================================== */
+
+.alert-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.severity-critical {
+  background: #451a1a;
+  color: #f87171;
+}
+
+.severity-warning {
+  background: #3b291d;
+  color: #fb923c;
+}
+
+.severity-unknown {
+  background: #374151;
+  color: #cbd5e1;
+}
+
+.event-triggered {
+  background: #172f40;
+  color: #38bdf8;
+}
+
+.event-resolved {
+  background: #14532d;
+  color: #4ade80;
+}
+
+.event-unknown {
+  background: #374151;
+  color: #cbd5e1;
+}
+
+
+/* ==================================================
+   ALERT FILTERS
+================================================== */
+
+.alerts-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.5fr) repeat(3, minmax(130px, 1fr)) auto auto;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 20px;
+}
+
+.alerts-filter-field {
+  min-width: 0;
+}
+
+.alerts-filter-panel select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 11px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  outline: none;
+  background: #101827;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.alerts-filter-panel select:focus,
+.alerts-filter-field:focus-within {
+  border-color: #38bdf8;
+}
+
+.alerts-apply-button,
+.alerts-clear-button {
+  padding: 12px 15px;
+  border: 1px solid #0284c7;
+  border-radius: 8px;
+  background: #0369a1;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.alerts-apply-button:hover {
+  background: #0284c7;
+}
+
+.alerts-clear-button {
+  border-color: #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+.alerts-clear-button:hover {
+  border-color: #64748b;
+  background: #273449;
+}
+
+
+/* ==================================================
+   ALERT HISTORY TABLE
+================================================== */
+
+.alerts-table-container {
+  margin-top: 10px;
+}
+
+.alerts-table {
+  min-width: 1050px;
+}
+
+.alerts-table th,
+.alerts-table td {
+  vertical-align: middle;
+}
+
+.alert-vehicle-id {
+  font-family: monospace;
+  font-size: 12px !important;
+  color: #38bdf8 !important;
+}
+
+
+/* ==================================================
+   ALERT PAGINATION
+================================================== */
+
+.alerts-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.alerts-pagination > span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.alerts-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alerts-pagination > div > span {
+  color: #cbd5e1;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.alerts-pagination button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.alerts-pagination button:hover:not(:disabled) {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.alerts-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* ==================================================
+   ALERT RESPONSIVE LAYOUT
+================================================== */
+
+@media (max-width: 1200px) {
+  .alerts-filter-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .active-alert-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .alerts-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .alerts-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .alerts-stats,
+  .active-alert-grid,
+  .alerts-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .alerts-section {
+    padding: 16px;
+  }
+
+  .alerts-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .alerts-pagination > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
